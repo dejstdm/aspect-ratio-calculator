@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aspect Ratio Calculator – One‑Pager</title>
+  <style>
+    :root{
+      --bg:#0f172a;        /* slate-900 */
+      --panel:#111827;     /* gray-900 */
+      --muted:#94a3b8;     /* slate-400 */
+      --text:#e5e7eb;      /* gray-200 */
+      --accent:#22d3ee;    /* cyan-400 */
+      --accent-2:#7c3aed;  /* violet-600 */
+      --ok:#10b981;        /* emerald-500 */
+      --warn:#f59e0b;      /* amber-500 */
+      --err:#ef4444;       /* red-500 */
+      --card:#0b1220;      /* custom */
+      --border:#1f2937;    /* gray-800 */
+      --shadow: 0 10px 25px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 1200px at 100% -20%, rgba(124,58,237,.15), transparent 60%),
+               radial-gradient(1000px 800px at -10% 100%, rgba(34,211,238,.12), transparent 60%), var(--bg);
+      color:var(--text); font:16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    .wrap{max-width:1100px; margin:32px auto; padding:0 16px}
+    .header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px}
+    .title{font-size:clamp(22px, 3.2vw, 34px); font-weight:800; letter-spacing:.2px}
+    .subtitle{color:var(--muted); font-size:14px}
+    .grid{display:grid; grid-template-columns:1.1fr .9fr; gap:18px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .card__hd{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border)}
+    .card__title{font-weight:700}
+    .card__bd{padding:18px}
+
+    .tabs{display:flex; gap:8px; background:var(--panel); padding:6px; border-radius:12px; border:1px solid var(--border)}
+    .tabs__btn{appearance:none; border:0; background:transparent; color:var(--muted); padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:600}
+    .tabs__btn[aria-selected="true"]{background:var(--card); color:var(--text); border:1px solid var(--border)}
+
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    .row--3{grid-template-columns:1fr 1fr 1fr}
+    .row--auto{grid-template-columns:auto 1fr auto}
+    @media (max-width:680px){ .row, .row--3, .row--auto{grid-template-columns:1fr} }
+
+    .field{display:flex; flex-direction:column; gap:6px}
+    .label{font-size:13px; color:var(--muted)}
+    .input{background:var(--panel); border:1px solid var(--border); color:var(--text); border-radius:12px; padding:10px 12px; outline:none}
+    .input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+    .btn{appearance:none; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:12px; padding:10px 14px; cursor:pointer; font-weight:700}
+    .btn:hover{border-color:var(--accent)}
+    .btn--primary{background:linear-gradient(90deg, var(--accent), var(--accent-2)); border-color:transparent; color:#0b1020}
+    .btn--ghost{background:transparent}
+    .btn--sm{padding:6px 10px; font-size:13px}
+
+    .kpi{display:grid; grid-template-columns:repeat(3, 1fr); gap:12px}
+    @media (max-width:680px){ .kpi{grid-template-columns:1fr} }
+    .kpi__item{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px}
+    .kpi__label{font-size:12px; color:var(--muted)}
+    .kpi__value{font-size:22px; font-weight:800}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+
+    .preview{display:flex; align-items:center; justify-content:center; background:var(--panel); border:1px dashed var(--border); border-radius:12px; min-height:180px; overflow:hidden}
+    .preview img{max-width:100%; height:auto; display:block}
+    .muted{color:var(--muted)}
+    .flag{display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:var(--panel); margin-left:6px}
+    .copy{display:flex; gap:8px; flex-wrap:wrap}
+    .help{font-size:12px; color:var(--muted); margin-top:8px}
+    .hr{height:1px; background:var(--border); margin:14px 0}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--border); border-radius:999px; background:var(--panel);}
+    .ratio-bad{color:var(--warn)}
+    .ratio-ok{color:var(--ok)}
+    .dragover{outline:2px dashed var(--accent); outline-offset:6px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div>
+        <div class="title">Aspect Ratio Calculator</div>
+        <div class="subtitle">Give me an image or just its dimensions. I’ll tell you the ratio and help you resize while keeping it intact.</div>
+      </div>
+      <button class="btn btn--primary" id="btn-reset" title="Reset all">Reset</button>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: INPUTS & PREVIEW -->
+      <section class="card" aria-labelledby="srcTitle">
+        <div class="card__hd">
+          <div class="card__title" id="srcTitle">Image source</div>
+          <div class="tabs" role="tablist" aria-label="Input mode">
+            <button class="tabs__btn" role="tab" aria-selected="true" aria-controls="panel-dims" id="tab-dims">Dimensions</button>
+            <button class="tabs__btn" role="tab" aria-selected="false" aria-controls="panel-file" id="tab-file">Upload</button>
+          </div>
+        </div>
+        <div class="card__bd">
+          <!-- Dimensions panel -->
+          <div id="panel-dims" role="tabpanel" aria-labelledby="tab-dims">
+            <div class="row">
+              <label class="field">
+                <span class="label">Width (px)</span>
+                <input class="input" id="in-w" type="number" min="1" inputmode="numeric" placeholder="e.g., 1920" />
+              </label>
+              <label class="field">
+                <span class="label">Height (px)</span>
+                <input class="input" id="in-h" type="number" min="1" inputmode="numeric" placeholder="e.g., 1080" />
+              </label>
+            </div>
+            <div class="help">Tip: you can also paste like <span class="mono">1200x800</span> or <span class="mono">1200×800</span> into either field.</div>
+          </div>
+
+          <!-- File panel -->
+          <div id="panel-file" role="tabpanel" aria-labelledby="tab-file" hidden>
+            <div class="row">
+              <label class="field">
+                <span class="label">Choose image</span>
+                <input class="input" id="file" type="file" accept="image/*" />
+              </label>
+              <div class="field">
+                <span class="label">Info</span>
+                <div class="pill"><span id="file-name" class="muted">No file selected</span></div>
+              </div>
+            </div>
+            <div id="drop" class="preview" aria-label="Preview / Drop zone">
+              <span class="muted">Drop an image here or use the file picker</span>
+            </div>
+            <div class="help">We read natural pixel dimensions in‑browser. Some photos with rotation metadata may report swapped width/height depending on the source app.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: RESULTS -->
+      <section class="card" aria-labelledby="resTitle">
+        <div class="card__hd">
+          <div class="card__title" id="resTitle">Aspect ratio</div>
+          <div class="pill">
+            <span class="muted">Orientation:</span>
+            <strong id="orient">—</strong>
+          </div>
+        </div>
+        <div class="card__bd">
+          <div class="kpi">
+            <div class="kpi__item">
+              <div class="kpi__label">Simplified</div>
+              <div class="kpi__value mono" id="kpi-simplified">—</div>
+            </div>
+            <div class="kpi__item">
+              <div class="kpi__label">Decimal (W÷H)</div>
+              <div class="kpi__value mono" id="kpi-decimal">—</div>
+            </div>
+            <div class="kpi__item">
+              <div class="kpi__label">Pixels</div>
+              <div class="kpi__value mono" id="kpi-px">—</div>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="row">
+            <div>
+              <div class="label">Closest common ratio</div>
+              <div id="closest" class="mono">—</div>
+              <div class="help">(We compare against popular sets like 1:1, 4:3, 16:9, 3:2, 21:9, etc.)</div>
+            </div>
+            <div>
+              <div class="label">Actions</div>
+              <div class="copy">
+                <button class="btn btn--sm" id="copy-ratio">Copy ratio</button>
+                <button class="btn btn--sm" id="copy-px">Copy pixels</button>
+                <button class="btn btn--sm" id="swap">Swap W↔H</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEFT BOTTOM: RESIZE -->
+      <section class="card" aria-labelledby="sizeTitle">
+        <div class="card__hd">
+          <div class="card__title" id="sizeTitle">Resize (keep aspect)</div>
+          <div class="row row--auto" style="gap:8px; align-items:center">
+            <label class="field" style="min-width:160px">
+              <span class="label">Rounding</span>
+              <select class="input" id="rounding">
+                <option value="round" selected>Round</option>
+                <option value="floor">Floor</option>
+                <option value="ceil">Ceil</option>
+              </select>
+            </label>
+            <div class="pill"><span class="muted">Scale</span> <strong id="scale">—</strong></div>
+          </div>
+        </div>
+        <div class="card__bd">
+          <div class="row">
+            <label class="field">
+              <span class="label">Target width (px)</span>
+              <input class="input" id="tw" type="number" min="1" placeholder="e.g., 1200" />
+            </label>
+            <label class="field">
+              <span class="label">Target height (px)</span>
+              <input class="input" id="th" type="number" min="1" placeholder="e.g., 675" />
+            </label>
+          </div>
+          <div class="help">Fill either width <em>or</em> height — the other updates automatically. If both are filled, width wins.</div>
+          <div class="hr"></div>
+          <div class="row row--3">
+            <label class="field">
+              <span class="label">Fit inside box → Max width</span>
+              <input class="input" id="box-w" type="number" min="1" placeholder="e.g., 1200" />
+            </label>
+            <label class="field">
+              <span class="label">Max height</span>
+              <input class="input" id="box-h" type="number" min="1" placeholder="e.g., 900" />
+            </label>
+            <div class="field">
+              <span class="label">Result</span>
+              <div class="pill mono" id="box-out">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT BOTTOM: QUICK TOOLS -->
+      <section class="card" aria-labelledby="toolsTitle">
+        <div class="card__hd">
+          <div class="card__title" id="toolsTitle">Quick tools</div>
+        </div>
+        <div class="card__bd">
+          <div class="row">
+            <label class="field">
+              <span class="label">Scale by (%)</span>
+              <input class="input" id="scale-pct" type="number" min="1" placeholder="e.g., 50 for half" />
+            </label>
+            <div class="field">
+              <span class="label">Scaled size</span>
+              <div class="pill mono" id="scale-out">—</div>
+            </div>
+          </div>
+          <div class="help">Enter 200 for 2× larger, 75 for 0.75×, etc.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ---------- helpers ----------
+    const $ = (sel, ctx=document) => ctx.querySelector(sel);
+    const gcd = (a,b) => { a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b, a%b]; } return a||1; };
+    const fmt = n => Number.isFinite(n) ? n.toString() : '—';
+    const rounders = { round: Math.round, floor: Math.floor, ceil: Math.ceil };
+    const commonRatios = [
+      [1,1], [5,4], [4,3], [7,5], [3,2], [16,10], [16,9], [18,9], [21,9], [9,16], [10,16], [2,3], [3,4]
+    ];
+
+    let W=NaN, H=NaN; // current working width/height
+
+    function setWH(w,h){
+      if(!Number.isFinite(w) || !Number.isFinite(h) || w<=0 || h<=0) return;
+      W = w; H = h;
+      $('#in-w').value = w; $('#in-h').value = h;
+      updateStats();
+    }
+
+    function parsePaste(e){
+      const v = e.target.value.trim();
+      const m = v.match(/(\d+)\s*[x×]\s*(\d+)/i);
+      if(m){ setWH(+m[1], +m[2]); }
+    }
+
+    function updateStats(){
+      if(!(W>0 && H>0)) return;
+      const g = gcd(W,H);
+      const sw = W/g, sh = H/g;
+      const dec = (W/H);
+      const orient = W===H ? 'Square' : (W>H ? 'Landscape' : 'Portrait');
+
+      $('#kpi-simplified').textContent = `${sw}:${sh}`;
+      $('#kpi-decimal').textContent = dec.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+      $('#kpi-px').textContent = `${W} × ${H}`;
+      $('#orient').textContent = orient;
+
+      // closest common ratio
+      let closest = null; let bestDiff = Infinity; let exact=false;
+      for(const [a,b] of commonRatios){
+        const r = a/b; const diff = Math.abs(dec - r);
+        if(diff < bestDiff){ bestDiff = diff; closest = [a,b]; }
+        if(sw===a && sh===b){ exact=true; closest=[a,b]; bestDiff=0; break; }
+      }
+      const pct = (bestDiff/(W/H))*100;
+      $('#closest').innerHTML = closest
+        ? `${closest[0]}:${closest[1]} ${bestDiff<1e-9?'<span class="flag ratio-ok">exact</span>':`<span class="flag ${pct<0.5?'ratio-ok':'ratio-bad'}">Δ ${(bestDiff).toFixed(6)}</span>`}`
+        : '—';
+
+      // recalc dependent tools
+      calcTarget();
+      calcBoxFit();
+      calcScale();
+    }
+
+    function calcTarget(){
+      const r = W/H; if(!(r>0)) return;
+      const rounding = rounders[$('#rounding').value] || Math.round;
+      const tw = +($('#tw').value||0); const th = +($('#th').value||0);
+      let outW = NaN, outH = NaN, scale = NaN;
+      if(tw>0){ outW = tw; outH = rounding(tw / r); scale = tw / W; }
+      else if(th>0){ outH = th; outW = rounding(th * r); scale = outW / W; }
+      $('#scale').textContent = Number.isFinite(scale) ? `${(scale*100).toFixed(2)}%` : '—';
+      // write into fields but avoid infinite loops
+      if(Number.isFinite(outW)) $('#tw').setAttribute('data-out','1'), $('#tw').value = outW, $('#tw').removeAttribute('data-out');
+      if(Number.isFinite(outH)) $('#th').setAttribute('data-out','1'), $('#th').value = outH, $('#th').removeAttribute('data-out');
+    }
+
+    function calcBoxFit(){
+      const bw = +($('#box-w').value||0), bh = +($('#box-h').value||0); if(!(W>0 && H>0)) return;
+      if(bw<=0 || bh<=0){ $('#box-out').textContent = '—'; return; }
+      const r = W/H; // width/height
+      let ow = bw, oh = Math.floor(bw / r);
+      if(oh > bh){ oh = bh; ow = Math.floor(bh * r); }
+      $('#box-out').textContent = `${ow} × ${oh}`;
+    }
+
+    function calcScale(){
+      const pct = +($('#scale-pct').value||0); if(!(W>0 && H>0) || pct<=0){ $('#scale-out').textContent='—'; return; }
+      const f = pct/100; const rw = Math.round(W*f), rh = Math.round(H*f);
+      $('#scale-out').textContent = `${rw} × ${rh}`;
+    }
+
+    // ---------- events ----------
+    $('#in-w').addEventListener('input', e=>{ if($('#in-w').hasAttribute('data-out')) return; const v=+e.target.value; if(v>0){ W=v; if(!(H>0)) H=NaN; updateStats(); } });
+    $('#in-h').addEventListener('input', e=>{ if($('#in-h').hasAttribute('data-out')) return; const v=+e.target.value; if(v>0){ H=v; if(!(W>0)) W=NaN; updateStats(); } });
+    $('#in-w').addEventListener('paste', parsePaste);
+    $('#in-h').addEventListener('paste', parsePaste);
+
+    $('#tw').addEventListener('input', e=>{ if($('#tw').hasAttribute('data-out')) return; calcTarget(); });
+    $('#th').addEventListener('input', e=>{ if($('#th').hasAttribute('data-out')) return; calcTarget(); });
+    $('#rounding').addEventListener('change', calcTarget);
+
+    $('#box-w').addEventListener('input', calcBoxFit);
+    $('#box-h').addEventListener('input', calcBoxFit);
+
+    $('#scale-pct').addEventListener('input', calcScale);
+
+    $('#copy-ratio').addEventListener('click', async()=>{
+      if(!(W>0 && H>0)) return; const g=gcd(W,H); await navigator.clipboard.writeText(`${W/g}:${H/g}`);
+      flash($('#copy-ratio'));
+    });
+    $('#copy-px').addEventListener('click', async()=>{
+      if(!(W>0 && H>0)) return; await navigator.clipboard.writeText(`${W}x${H}`); flash($('#copy-px'));
+    });
+
+    $('#swap').addEventListener('click', ()=>{ if(!(W>0 && H>0)) return; setWH(H,W); });
+    $('#btn-reset').addEventListener('click', ()=>{ location.reload(); });
+
+    // Tabs
+    function activateTab(which){
+      const isDims = which==='dims';
+      $('#tab-dims').setAttribute('aria-selected', isDims);
+      $('#tab-file').setAttribute('aria-selected', !isDims);
+      $('#panel-dims').hidden = !isDims;
+      $('#panel-file').hidden = isDims;
+    }
+    $('#tab-dims').addEventListener('click', ()=>activateTab('dims'));
+    $('#tab-file').addEventListener('click', ()=>activateTab('file'));
+
+    // File handling + drag-drop
+    const dz = $('#drop');
+    $('#file').addEventListener('change', e=>handleFile(e.target.files?.[0]));
+    ;['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('dragover'); }));
+    ;['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('dragover'); }));
+    dz.addEventListener('drop', e=>{ const f = e.dataTransfer?.files?.[0]; if(f) handleFile(f); });
+
+    function handleFile(file){
+      if(!file) return; $('#file-name').textContent = `${file.name} • ${(file.size/1024/1024).toFixed(2)} MB`;
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = ()=>{
+        dz.innerHTML = ''; dz.appendChild(img);
+        setWH(img.naturalWidth, img.naturalHeight);
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = ()=>{ dz.textContent = 'Could not load image.'; };
+      img.src = url;
+      activateTab('file');
+    }
+
+    function flash(btn){
+      const t = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(()=>btn.textContent=t, 900);
+    }
+
+    // Defaults for quick try
+    setWH(1920,1080);
+  </script>
+</body>
+</html>
